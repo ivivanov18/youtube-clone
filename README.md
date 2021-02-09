@@ -44,5 +44,6 @@ npm run dev
 ## Helpful Links
 
 - [Google Developer Console](https://console.developers.google.com/)
-- [Prisma Docs](https://prisma.io)
+- [Prisma Documentations](https://prisma.io)
 - [Cloudinary Documentation](https://cloudinary.com/documentation/)
+- [React Query Documentation](https://react-query.tanstack.com)
