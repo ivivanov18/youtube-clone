@@ -1,6 +1,7 @@
 import express from "express";
 import { PrismaClient } from "@prisma/client";
 import jwt from "jsonwebtoken";
+import { protect } from "../middleware/authorization";
 
 const prisma = new PrismaClient();
 
@@ -10,6 +11,7 @@ function getAuthRoutes() {
   const router = express.Router();
 
   router.post("/google-login", googleLogin);
+  router.get("/me", protect, me);
 
   return router;
 }
@@ -21,7 +23,6 @@ async function googleLogin(req, res) {
   let user = await prisma.user.findUnique({
     where: { email },
   });
-  console.log("1", user);
 
   if (!user) {
     user = await prisma.user.create({
@@ -30,7 +31,6 @@ async function googleLogin(req, res) {
         username,
       },
     });
-    console.log({ user });
   }
 
   const tokenPayload = { id: (await user).id };
@@ -42,7 +42,9 @@ async function googleLogin(req, res) {
   res.status(200).send(token);
 }
 
-async function me(req, res) {}
+async function me(req, res) {
+  res.status(200).json({ user: req.user });
+}
 
 function signout(req, res) {}
 
