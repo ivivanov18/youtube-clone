@@ -10,6 +10,7 @@ function getVideoRoutes() {
   router.get("/trending", getTrendingVideos);
   router.get("/search", searchVideos);
   router.post("/", protect, addVideo);
+  router.post("/:videoId/comment", protect, addComment);
 
   return router;
 }
@@ -118,7 +119,46 @@ async function addVideo(req, res, next) {
   return res.status(201).json({ video });
 }
 
-async function addComment(req, res, next) {}
+async function addComment(req, res, next) {
+  const { videoId } = req.params;
+  const video = await prisma.video.findUnique({
+    where: {
+      id: videoId,
+    },
+  });
+
+  if (!video) {
+    return next({
+      message: `Video with id ${videoId} was not found`,
+    });
+  }
+
+  const { text } = req.body;
+
+  try {
+    const comment = await prisma.comment.create({
+      data: {
+        text,
+        user: {
+          connect: {
+            id: req.user.id,
+          },
+        },
+        video: {
+          connect: {
+            id: videoId,
+          },
+        },
+      },
+    });
+    return res.status(201).json({ comment });
+  } catch (err) {
+    return next({
+      message: "Something went wrong. Please try again",
+      statusCode: 500,
+    });
+  }
+}
 
 async function deleteComment(req, res) {}
 
