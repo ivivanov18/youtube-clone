@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import express from "express";
+import { protect } from "../middleware/authorization";
 
 const prisma = new PrismaClient();
 
@@ -8,6 +9,7 @@ function getVideoRoutes() {
   router.get("/", getRecommendedVideos);
   router.get("/trending", getTrendingVideos);
   router.get("/search", searchVideos);
+  router.post("/", protect, addVideo);
 
   return router;
 }
@@ -89,7 +91,32 @@ async function searchVideos(req, res, next) {
   return res.status(200).json({ videos });
 }
 
-async function addVideo(req, res) {}
+async function addVideo(req, res, next) {
+  const { title, description, url, thumbnail } = req.body;
+
+  if (!title || !url || !thumbnail) {
+    return next({
+      message: "Please fill the required fields",
+      statusCode: 400,
+    });
+  }
+
+  const video = await prisma.video.create({
+    data: {
+      title,
+      description,
+      url,
+      thumbnail,
+      user: {
+        connect: {
+          id: req.user.id,
+        },
+      },
+    },
+  });
+
+  return res.status(201).json({ video });
+}
 
 async function addComment(req, res, next) {}
 
