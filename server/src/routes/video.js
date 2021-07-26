@@ -10,7 +10,8 @@ function getVideoRoutes() {
   router.get("/trending", getTrendingVideos);
   router.get("/search", searchVideos);
   router.post("/", protect, addVideo);
-  router.post("/:videoId/comment", protect, addComment);
+  router.post("/:videoId/comments", protect, addComment);
+  router.delete("/comments/:commentId", protect, deleteComment);
 
   return router;
 }
@@ -130,6 +131,7 @@ async function addComment(req, res, next) {
   if (!video) {
     return next({
       message: `Video with id ${videoId} was not found`,
+      statusCode: 404,
     });
   }
 
@@ -160,7 +162,35 @@ async function addComment(req, res, next) {
   }
 }
 
-async function deleteComment(req, res) {}
+async function deleteComment(req, res) {
+  const { commentId } = req.params;
+  const comment = await prisma.comment.findUnique({
+    where: {
+      id: commentId,
+    },
+    select: {
+      userId: true,
+    },
+  });
+
+  if (!comment) {
+    return res.status(404).send(`Comment id ${commentId} cannot be found`);
+  }
+
+  if (comment.userId != req.user.id) {
+    return res
+      .status(401)
+      .send("You are not authorized to delete this comment");
+  }
+
+  await prisma.comment.delete({
+    where: {
+      id: commentId,
+    },
+  });
+
+  return res.status(200).json({});
+}
 
 async function addVideoView(req, res, next) {}
 
