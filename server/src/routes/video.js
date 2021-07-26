@@ -7,6 +7,7 @@ function getVideoRoutes() {
   const router = express.Router();
   router.get("/", getRecommendedVideos);
   router.get("/trending", getTrendingVideos);
+  router.get("/search", searchVideos);
 
   return router;
 }
@@ -49,7 +50,44 @@ async function getTrendingVideos(req, res) {
   return res.status(200).json({ videos });
 }
 
-async function searchVideos(req, res, next) {}
+async function searchVideos(req, res, next) {
+  if (!req.query.query) {
+    return next({
+      message: "Please provide a query string",
+      statusCode: 400,
+    });
+  }
+
+  let videos = await prisma.video.findMany({
+    include: {
+      user: true,
+    },
+    where: {
+      OR: [
+        {
+          title: {
+            contains: req.query.query,
+            mode: "insensitive",
+          },
+        },
+        {
+          description: {
+            contains: req.query.query,
+            mode: "insensitive",
+          },
+        },
+      ],
+    },
+  });
+
+  if (!videos.length) {
+    return res.status(200).json({ videos });
+  }
+
+  videos = await getVideoViews(videos);
+
+  return res.status(200).json({ videos });
+}
 
 async function addVideo(req, res) {}
 
